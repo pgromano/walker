@@ -35,7 +35,7 @@ class walker(object):
 		'''
 		# Setup thermal scale
 		self._T = T
-		self._kbT = 1
+		self._kbT = 0.00198*T
 
 		# Setup gaussian minima
 		if type(minima) == list:
@@ -104,7 +104,7 @@ class walker(object):
 		XX, YY = np.meshgrid(x,y)
 		self.surface = self.potential(XX, YY)
 
-	def simulate(self, steps, dt=0.1, mGamma=1000.0, init=None):
+	def simulate(self, steps, dt=0.1, mGamma=1.0, init=None):
 		F_random = np.random.normal(scale=np.sqrt((2.0*self.attr.kbT*dt)/mGamma),
 					size=(steps-1,2))
 		position = np.zeros((steps, 2))
@@ -112,6 +112,7 @@ class walker(object):
 			position[0,:] = init
 
 		for t in tqdm.trange(steps-1):
+			print("Step: "+str(t+1))
 			position[t+1] = position[t] + np.multiply((dt/mGamma), self.force(position[t])) + F_random[t]
 		self.trajectory = position
 
