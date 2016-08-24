@@ -7,6 +7,7 @@ setup(name = 'walker',
     packages = ['walker'],
     install_requires=[
         'numpy',
+        'tqdm',
         'theano'
     ],
     zip_safe = False

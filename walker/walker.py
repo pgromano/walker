@@ -1,5 +1,6 @@
 import numpy as np
 import theano
+import tqdm
 from walker.util import attributes
 
 class walker(object):
@@ -110,7 +111,7 @@ class walker(object):
 		if init is not None:
 			position[0,:] = init
 
-		for t in range(steps-1):
+		for t in tqdm.trange(steps-1):
 			position[t+1] = position[t] + np.multiply((dt/mGamma), self.force(position[t])) + F_random[t]
 		self.trajectory = position
 
