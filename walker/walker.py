@@ -104,7 +104,7 @@ class walker(object):
 		XX, YY = np.meshgrid(x,y)
 		self.surface = self.potential(XX, YY)
 
-	def simulate(self, steps, dt=0.1, mGamma=1.0, init=None):
+	def simulate(self, steps, dt=0.1, mGamma=100.0, init=None):
 		F_random = np.random.normal(scale=np.sqrt((2.0*self.attr.kbT*dt)/mGamma),
 					size=(steps-1,2))
 		position = np.zeros((steps, 2))
