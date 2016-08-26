@@ -6,9 +6,7 @@ setup(name = 'walker',
     url = 'https://github.com/pgromano/walker',
     packages = ['walker'],
     install_requires=[
-        'numpy',
-        'tqdm',
-        'theano'
+        'numpy'
     ],
     zip_safe = False
 )
