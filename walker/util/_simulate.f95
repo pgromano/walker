@@ -8,7 +8,7 @@
 	REAL(kind=8),INTENT(in) :: sx(1:states), sy(1:states), sk(1:states)
 	REAL(kind=8),INTENT(inout) :: x, y
 
-	INTEGER(kind=4) :: step
+	INTEGER(kind=4) :: step, n
 	INTEGER(kind=4) :: i, clock, N_seed
 	INTEGER(kind=4), ALLOCATABLE :: seed(:)
 	REAL(kind=8) :: dVx, dVy, Fx_random, Fy_random
@@ -28,9 +28,11 @@
 	mean = 0.d0
 	std = SQRT((2*kbT*dt)/mG)
 
-	OPEN(unit=1, file="walk")
-	WRITE(1,*)x,y
-	DO step=1,steps
+	OPEN(unit=1, file='walk.b', form='unformatted', action='readwrite', &
+		& access='direct',recl=16)
+
+	WRITE(1,rec=1)x,y
+	DO step=2,steps
 		! Calculate force along potential
 		dVx = 0.d0
 		dVy = 0.d0
@@ -52,10 +54,11 @@
 		x = x - (dt/mG)*dVx + Fx_random
 		y = y - (dt/mG)*dVy + Fy_random
 
-		WRITE(1,'(2(F8.4))')x,y
+		WRITE(1,rec=step)x,y
 		!CALL PROGRESS(step,steps)
 	END DO
 	CLOSE(1)
+	CLOSE(2)
 	END !SUBROUTINE SIMULATE
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
