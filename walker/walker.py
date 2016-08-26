@@ -1,10 +1,8 @@
 import numpy as np
-import theano
-import tqdm
-from walker.util import attributes
+from walker import util
 
 class walker(object):
-	def __init__(self, minima, width=None, skew=None, depth=None, T=298):
+	def __init__(self, minima, width=None, skew=None, depth=None, extent=None, kbT=10):
 		'''
 		minima: float
 			The x,y positions for all minima that define the potential. The
@@ -34,8 +32,7 @@ class walker(object):
 		[3] Code re-adapted from https://github.com/rmcgibbo/mullermsm
 		'''
 		# Setup thermal scale
-		self._T = T
-		self._kbT = 0.00198*T
+		self._surface_kbT = kbT
 
 		# Setup gaussian minima
 		if type(minima) == list:
@@ -45,8 +42,8 @@ class walker(object):
 
 		# Setup gaussian widths
 		if width is None:
-			width = np.ones((len(minima), 2))
-		elif type(width) == list:
+			width = np.ones((len(minima), 2))*0.2
+		if type(width) == list:
 			width = np.squeeze(width)
 		self._width = width
 
@@ -62,7 +59,14 @@ class walker(object):
 		'''TODO: Setup an automatic depth calculator to ensure proper
 		barrier heights and no particle escape.'''
 
-		self.attr = attributes.attributes(self)
+		# Setup coordinate range
+		if extent is None:
+			extent = [-1,1,-1,1]
+		if type(extent) == list:
+			extent = np.squeeze(extent)
+		self._extent = extent
+
+		self.attr = util.attributes.attributes(self)
 
 	def potential(self, x, y):
 		def shape(sx, sy, skew):
@@ -78,18 +82,15 @@ class walker(object):
 		# Add wide minima to reduce liklihood of particle escape
 		XX = np.insert(self.attr.minima[:,0], 0, self.attr.minima[:,0].mean())
 		YY = np.insert(self.attr.minima[:,1], 0, self.attr.minima[:,1].mean())
-		sx = np.insert(self.attr.width[:,0], 0, self.attr.width[:,0].max()*10)
-		sy = np.insert(self.attr.width[:,1], 0, self.attr.width[:,1].max()*10)
+		sx = np.insert(self.attr.width[:,0], 0, self.attr.width[:,0].sum()*3.75)
+		sy = np.insert(self.attr.width[:,1], 0, self.attr.width[:,1].sum()*3.75)
+		AA = -np.insert(self.attr.depth, 0, self.attr.depth.max()*0.25)*self.attr.kbT
 
 		aa, bb, cc = shape(sx, sy, np.insert(self.attr.skew, 0, 0))
-		AA = -np.insert(self.attr.depth, 0, self.attr.depth.max())*self.attr.kbT
-
-		# use symbolic algebra if you supply symbolic quantities
-		exp = theano.tensor.exp if isinstance(x, theano.tensor.TensorVariable) else np.exp
 
 		value = 0
 		for j in range(0, len(AA)):
-			value += AA[j]*exp(-(aa[j]*(x-XX[j])**2 -
+			value += AA[j]*np.exp(-(aa[j]*(x-XX[j])**2 -
 					 2*bb[j]*(x-XX[j])*(y-YY[j]) +
 					 cc[j]*(y-YY[j])**2))
 		return value
@@ -104,25 +105,27 @@ class walker(object):
 		XX, YY = np.meshgrid(x,y)
 		self.surface = self.potential(XX, YY)
 
-	def simulate(self, steps, dt=0.1, mGamma=100.0, init=None):
-		F_random = np.random.normal(scale=np.sqrt((2.0*self.attr.kbT*dt)/mGamma),
-					size=(steps-1,2))
-		position = np.zeros((steps, 2))
-		if init is not None:
-			position[0,:] = init
+	def simulate(self, steps, kbT=1, dt=0.001, mGamma=1000.0, init=None):
+		# Setup thermal scale
+		if init is None:
+			x = 0.0
+			y = 0.0
+		else:
+			x = init[0]
+			y = init[1]
 
-		for t in tqdm.trange(steps-1):
-			print("Step: "+str(t+1))
-			position[t+1] = position[t] + np.multiply((dt/mGamma), self.force(position[t])) + F_random[t]
-		self.trajectory = position
+		XX = np.insert(self.attr.minima[:,0], 0, self.attr.minima[:,0].mean())
+		YY = np.insert(self.attr.minima[:,1], 0, self.attr.minima[:,1].mean())
+		sx = np.insert(self.attr.width[:,0], 0, self.attr.width[:,0].sum()*3.75)
+		sy = np.insert(self.attr.width[:,1], 0, self.attr.width[:,1].sum()*3.75)
+		AA = -np.insert(self.attr.depth, 0, self.attr.depth.max()*0.25)*self.attr.kbT
+		sk = np.insert(self.attr.skew, 0, 0)
 
-	def force(self, position):
-		"""Compile a theano function to compute the negative grad
-		 of the muller potential"""
-		sym_x, sym_y = theano.tensor.scalar(), theano.tensor.scalar()
-		sym_V = self.potential(sym_x, sym_y)
-		sym_F =  theano.tensor.grad(-sym_V, [sym_x, sym_y])
-
-		# F takes two arguments, x,y and returns a 2 element python list
-		F = theano.function([sym_x, sym_y], sym_F)
-		return np.array(F(*position))
+		util.simulate(x, y, steps, dt, mGamma, kbT,
+					XX.astype(float, order='F'),
+					YY.astype(float, order='F'),
+					AA.astype(float, order='F'),
+					sx.astype(float, order='F'),
+					sy.astype(float, order='F'),
+					sk.astype(float, order='F'),
+					len(XX))
