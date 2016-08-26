@@ -52,7 +52,7 @@
 		x = x - (dt/mG)*dVx + Fx_random
 		y = y - (dt/mG)*dVy + Fy_random
 
-		WRITE(1,*)x,y
+		WRITE(1,'(2(F8.4))')x,y
 		!CALL PROGRESS(step,steps)
 	END DO
 	CLOSE(1)
