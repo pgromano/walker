@@ -28,10 +28,14 @@
 	mean = 0.d0
 	std = SQRT((2*kbT*dt)/mG)
 
-	OPEN(unit=1, file='walk.b', form='unformatted', action='readwrite', &
-		& access='direct',recl=16)
-
-	WRITE(1,rec=1)x,y
+!	OPEN(unit=1, file='walk.b', form='unformatted', action='readwrite', &
+!		& access='direct',recl=16)
+	OPEN(unit=1, file='q0')
+	OPEN(unit=2, file='q1')
+	
+!	WRITE(1,rec=1)x,y
+	WRITE(1,'(F16.6)')x
+	WRITE(2,'(F16.6)')y
 	DO step=2,steps
 		! Calculate force along potential
 		dVx = 0.d0
@@ -54,7 +58,9 @@
 		x = x - (dt/mG)*dVx + Fx_random
 		y = y - (dt/mG)*dVy + Fy_random
 
-		WRITE(1,rec=step)x,y
+!		WRITE(1,rec=step)x,y
+		WRITE(1,'(F16.4)')x
+		WRITE(2,'(F16.4)')y
 		!CALL PROGRESS(step,steps)
 	END DO
 	CLOSE(1)

@@ -6,6 +6,6 @@ class attributes(object):
         self.minima = walker._minima
         self.width = walker._width
         self.skew = walker._skew
-        self.depth = walker._depth
+        self.intensity = walker._intensity
         self.extent = walker._extent
         self.kbT = walker._surface_kbT

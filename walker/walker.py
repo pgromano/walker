@@ -2,7 +2,7 @@ import numpy as np
 from walker import util
 
 class walker(object):
-	def __init__(self, minima, width=None, skew=None, depth=None, extent=None, kbT=10):
+	def __init__(self, minima, width=None, skew=None, intensity=None, extent=None, kbT=10):
 		'''
 		minima: float
 			The x,y positions for all minima that define the potential. The
@@ -50,13 +50,17 @@ class walker(object):
 		# Setup gaussian skews
 		if skew is None:
 			skew = np.zeros(len(minima))
+		if type(skew) == list:
+			skew = np.squeeze(skew)
 		self._skew = skew
 
-		# Setup gaussian depths
-		if depth is None:
-			depth = np.ones(len(minima))
-		self._depth = depth
-		'''TODO: Setup an automatic depth calculator to ensure proper
+		# Setup gaussian intensitys
+		if intensity is None:
+			intensity = np.ones(len(minima))
+		if type(intensity) == list:
+			intensity = np.squeeze(intensity)
+		self._intensity = intensity
+		'''TODO: Setup an automatic intensity calculator to ensure proper
 		barrier heights and no particle escape.'''
 
 		# Setup coordinate range
@@ -84,7 +88,7 @@ class walker(object):
 		YY = np.insert(self.attr.minima[:,1], 0, self.attr.minima[:,1].mean())
 		sx = np.insert(self.attr.width[:,0], 0, self.attr.width[:,0].sum()*3.75)
 		sy = np.insert(self.attr.width[:,1], 0, self.attr.width[:,1].sum()*3.75)
-		AA = -np.insert(self.attr.depth, 0, self.attr.depth.max()*0.25)*self.attr.kbT
+		AA = -np.insert(self.attr.intensity, 0, self.attr.intensity.max()*0.25)*self.attr.kbT
 
 		aa, bb, cc = shape(sx, sy, np.insert(self.attr.skew, 0, 0))
 
@@ -118,7 +122,7 @@ class walker(object):
 		YY = np.insert(self.attr.minima[:,1], 0, self.attr.minima[:,1].mean())
 		sx = np.insert(self.attr.width[:,0], 0, self.attr.width[:,0].sum()*3.75)
 		sy = np.insert(self.attr.width[:,1], 0, self.attr.width[:,1].sum()*3.75)
-		AA = -np.insert(self.attr.depth, 0, self.attr.depth.max()*0.25)*self.attr.kbT
+		AA = -np.insert(self.attr.intensity, 0, self.attr.intensity.max()*0.25)*self.attr.kbT
 		sk = np.insert(self.attr.skew, 0, 0)
 
 		util.simulate(x, y, steps, dt, mGamma, kbT,
