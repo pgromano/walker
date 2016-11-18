@@ -60,9 +60,7 @@ class walker(object):
 		if type(intensity) == list:
 			intensity = np.squeeze(intensity)
 		self._intensity = intensity
-		'''TODO: Setup an automatic intensity calculator to ensure proper
-		barrier heights and no particle escape.'''
-
+		
 		# Setup coordinate range
 		if extent is None:
 			extent = [-1,1,-1,1]
@@ -109,7 +107,7 @@ class walker(object):
 		XX, YY = np.meshgrid(x,y)
 		self.surface = self.potential(XX, YY)
 
-	def simulate(self, steps, kbT=1, dt=0.001, mGamma=1000.0, init=None):
+	def simulate(self, steps, kbT=1, dt=0.001, mGamma=10.0, init=None):
 		# Setup thermal scale
 		if init is None:
 			x = 0.0

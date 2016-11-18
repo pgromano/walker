@@ -1,14 +1,14 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE SIMULATE(x,y,steps,dt,mG,kbT,XX,YY,AA,sx,sy,sk,states)
+SUBROUTINE SIMULATE(x,y,steps,dt,mG,kbT,XX,YY,AA,sx,sy,sk,n_wells)
   IMPLICIT NONE
-  INTEGER(kind=4),INTENT(in) :: steps, states
+  INTEGER(kind=4),INTENT(in) :: steps, n_wells
   REAL(kind=8),INTENT(in) :: dt, mG, kbT
-  REAL(kind=8),INTENT(in) :: AA(1:states)
-  REAL(kind=8),INTENT(in) :: XX(1:states), YY(1:states)
-  REAL(kind=8),INTENT(in) :: sx(1:states), sy(1:states), sk(1:states)
+  REAL(kind=8),INTENT(in) :: AA(1:n_wells)
+  REAL(kind=8),INTENT(in) :: XX(1:n_wells), YY(1:n_wells)
+  REAL(kind=8),INTENT(in) :: sx(1:n_wells), sy(1:n_wells), sk(1:n_wells)
   REAL(kind=8),INTENT(inout) :: x, y
 
-  INTEGER(kind=4) :: step, n
+  INTEGER(kind=4) :: step
   INTEGER(kind=4) :: i, clock, N_seed
   INTEGER(kind=4), ALLOCATABLE :: seed(:)
   REAL(kind=8) :: dVx, dVy, Fx_random, Fy_random
@@ -32,15 +32,13 @@ SUBROUTINE SIMULATE(x,y,steps,dt,mG,kbT,XX,YY,AA,sx,sy,sk,states)
   !		& access='direct',recl=16)
   !	WRITE(1,rec=1)x,y
 
-  OPEN(unit=1, file='q0')
-  OPEN(unit=2, file='q1')
-  WRITE(1,'(F16.6)')x
-  WRITE(2,'(F16.6)')y
+  OPEN(unit=1, file='walk',status='REPLACE')
+  WRITE(1,'(2F16.6)')x,y
   DO step=2,steps
      ! Calculate force along potential
      dVx = 0.d0
      dVy = 0.d0
-     CALL POTENTIAL_FORCE(dVx, dVy, x, y, XX, YY, AA, sx, sy, sk, states)
+     CALL POTENTIAL_FORCE(dVx, dVy, x, y, XX, YY, AA, sx, sy, sk, n_wells)
 
      ! Generate random force along X
      CALL RANDOM_NUMBER(randNum)
@@ -50,38 +48,32 @@ SUBROUTINE SIMULATE(x,y,steps,dt,mG,kbT,XX,YY,AA,sx,sy,sk,states)
      CALL RANDOM_NUMBER(randNum)
      Fy_random = mean+std*DSIN(2.0E+00*pi*randNum)
 
-     !WRITE(*,'(I4,A,6(F16.8,A))')step," ", x, " ", y, " ", &
-     ! 	& -(dt/mG)*dVx, " ", -(dt/mG)*dVy, " ", Fx_random," ", Fy_random
-     ! Update coordinates
      x = x - (dt/mG)*dVx + Fx_random
      y = y - (dt/mG)*dVy + Fy_random
 
      !WRITE(1,rec=step)x,y
-     WRITE(1,'(F16.6)')x
-     WRITE(2,'(F16.6)')y
-     !CALL PROGRESS(step,steps)
+     WRITE(1,'(2F16.6)')x,y
   END DO
   CLOSE(1)
-  CLOSE(2)
-END SUBROUTINE SIMULATE !SUBROUTINE SIMULATE
+END SUBROUTINE SIMULATE
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE POTENTIAL_FORCE(dVx, dVy, x, y, XX, YY, AA, sx, sy, sk, states)
+SUBROUTINE POTENTIAL_FORCE(dVx, dVy, x, y, XX, YY, AA, sx, sy, sk, n_wells)
   IMPLICIT NONE
-  INTEGER(kind=4),INTENT(in) :: states
-  REAL(kind=8),INTENT(in) :: AA(1:states)
-  REAL(kind=8),INTENT(in) :: x, y, XX(1:states), YY(1:states)
-  REAL(kind=8),INTENT(in) :: sx(1:states), sy(1:states), sk(1:states)
+  INTEGER(kind=4),INTENT(in) :: n_wells
+  REAL(kind=8),INTENT(in) :: AA(1:n_wells)
+  REAL(kind=8),INTENT(in) :: x, y, XX(1:n_wells), YY(1:n_wells)
+  REAL(kind=8),INTENT(in) :: sx(1:n_wells), sy(1:n_wells), sk(1:n_wells)
   REAL(kind=8),INTENT(out) :: dVX, dVy
 
   INTEGER(kind=8) :: state
-  REAL(kind=8) :: a(1:states), b(1:states), c(1:states), ee
+  REAL(kind=8) :: a(1:n_wells), b(1:n_wells), c(1:n_wells), ee
 
   ! Prepare any asymmetries in Gaussian potential
   a = 0.d0
   b = 0.d0
   c = 0.d0
-  DO state=1,states
+  DO state=1,n_wells
      a(state) = DCOS(sk(state))**2/(2*sx(state)**2) + &
           & DSIN(sk(state))**2/(2*sy(state)**2)
      b(state) = -DSIN(2*sk(state))/(4*sx(state)**2) + &
@@ -94,14 +86,14 @@ SUBROUTINE POTENTIAL_FORCE(dVx, dVy, x, y, XX, YY, AA, sx, sy, sk, states)
   dVx = 0.d0
   dVy = 0.d0
   ee = 0.d0
-  DO state=1,states
+  DO state=1,n_wells
      ee = AA(state)*DEXP(-(a(state)*(x-XX(state))**2 - &
           & 2*b(state)*(x-XX(state))*(y-YY(state)) + &
           & c(state)*(y-YY(state))**2))
      dVx = dVx - 2*(a(state)*(x-XX(state))-b(state)*(y-YY(state)))*ee
      dVy = dVy - 2*(-b(state)*(x-XX(state))+c(state)*(y-YY(state)))*ee
   END DO
-END SUBROUTINE POTENTIAL_FORCE !SUBROUTINE POTENTIAL_FORCE
+END SUBROUTINE POTENTIAL_FORCE
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE RANDOM_FORCE(mean, std, value_out)
@@ -127,21 +119,4 @@ SUBROUTINE RANDOM_FORCE(mean, std, value_out)
   value_out = mean + std * x
   WRITE(*,*) clock, randNum, value_out
   RETURN
-END SUBROUTINE RANDOM_FORCE !SUBROUTINE RANDOM_FORCE
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-SUBROUTINE PROGRESS(step,steps)
-  IMPLICIT NONE
-  INTEGER(kind=4)::step,steps, k
-  CHARACTER(len=21)::bar="??????% |          |"
-  WRITE(unit=bar(1:6),fmt="(F6.2)") 100*(REAL(step)/REAL(steps))
-
-  !IF(MOD(INT(steps/step),10).eq.0)THEN
-  !	k = INT(steps/step)/10
-  !	bar(10+k:10+k)="*"
-  !END IF
-
-  ! print the progress bar.
-  WRITE(unit=6,fmt="(a1,a1,a17)") '+',CHAR(13), bar
-  RETURN
-END SUBROUTINE PROGRESS !SUBROUTINE PROGRESS
+END SUBROUTINE RANDOM_FORCE
