@@ -33,7 +33,7 @@ SUBROUTINE SIMULATE(x,y,steps,dt,mG,kbT,XX,YY,AA,sx,sy,sk,n_wells)
   !	WRITE(1,rec=1)x,y
 
   OPEN(unit=1, file='walk',status='REPLACE')
-  WRITE(1,'(2F16.6)')x,y
+  WRITE(1,'(F16.6,A,F16.6)')x,"    ",y
   DO step=2,steps
      ! Calculate force along potential
      dVx = 0.d0
@@ -52,7 +52,7 @@ SUBROUTINE SIMULATE(x,y,steps,dt,mG,kbT,XX,YY,AA,sx,sy,sk,n_wells)
      y = y - (dt/mG)*dVy + Fy_random
 
      !WRITE(1,rec=step)x,y
-     WRITE(1,'(2F16.6)')x,y
+     WRITE(1,'(F16.6,A,F16.6)')x,"    ",y
   END DO
   CLOSE(1)
 END SUBROUTINE SIMULATE
