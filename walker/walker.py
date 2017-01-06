@@ -60,7 +60,7 @@ class walker(object):
 		if type(intensity) == list:
 			intensity = np.squeeze(intensity)
 		self._intensity = intensity
-		
+
 		# Setup coordinate range
 		if extent is None:
 			extent = [-1,1,-1,1]
@@ -106,6 +106,36 @@ class walker(object):
 			y = np.linspace(extent[2], extent[3], bins)
 		XX, YY = np.meshgrid(x,y)
 		self.surface = self.potential(XX, YY)
+
+	def gradient(self, x, y):
+		def shape(sx, sy, skew):
+			aa = np.zeros(len(sx))
+			bb = np.copy(aa)
+			cc = np.copy(aa)
+			for n in range(len(sx)):
+				aa[n] =  np.cos(skew[n])**2/(2*sx[n]**2)+np.sin(skew[n])**2/(2*sy[n]**2)
+				bb[n] = -np.sin(2*skew[n])/(4*sx[n]**2)+np.sin(2*skew[n])/(4*sy[n]**2)
+				cc[n] =  np.sin(skew[n])**2/(2*sx[n]**2)+np.cos(skew[n])**2/(2*sy[n]**2)
+			return aa,bb,cc
+
+		XX = np.insert(self.attr.minima[:,0], 0, self.attr.minima[:,0].mean())
+		YY = np.insert(self.attr.minima[:,1], 0, self.attr.minima[:,1].mean())
+		sx = np.insert(self.attr.width[:,0], 0, self.attr.width[:,0].sum()*3.75)
+		sy = np.insert(self.attr.width[:,1], 0, self.attr.width[:,1].sum()*3.75)
+		AA = -np.insert(self.attr.intensity, 0, self.attr.intensity.max()*0.25)*self.attr.kbT
+		sk = np.insert(self.attr.skew, 0, 0)
+
+		aa, bb, cc = shape(sx, sy, np.insert(self.attr.skew, 0, 0))
+
+		ee = AA[0]*np.exp(aa[0]*(x-XX[0])**2+bb[0]*(x-XX[0])*(y-YY[0])+cc[0]*(y-YY[0])**2)
+		dVx = (2*aa[0]*(x-XX[0])+bb[0]*(y-YY[0]))*ee
+		dVy = (bb[0]*(x-XX[0])+2*cc[0]*(y-YY[0]))*ee
+		for i in range(1,self._N):
+			ee = AA[i]*np.exp(aa[i]*(x-XX[i])**2+bb[i]*(x-XX[i])*(y-YY[i])+cc[i]*(y-YY[i])**2)
+			dVx += (2*aa[i]*(x-XX[i])+bb[i]*(y-YY[i]))*ee
+			dVy += (bb[i]*(x-XX[i])+2*cc[i]*(y-YY[i]))*ee
+
+		return [dVx, dVy]
 
 	def simulate(self, steps, kbT=1, dt=0.001, mGamma=10.0, init=None):
 		# Setup thermal scale
