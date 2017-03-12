@@ -1,6 +1,6 @@
 # walker
-###Python API for random walk on Gaussian potential
+###Python API to Simulate Brownian Diffusion Along N-Dimensional Potential
 
-This code is a simple API designed to generate brownian simulations along any desired potential. Simulations of the random particle walker are executed in fortran code using f2py. Compilation is simple can be completed by
+`Walker` computes simulations of Brownian diffusion along an N-dimensional potential, which can easily be modified by setting Gaussian parameters.
 
-  `f2py -f ./walker/util/_simulate.f95 --fcompiler='gfortran' -f90flags='-Wno-tabs' -m ./walker/util/_simulate`
+This package is still in development.
