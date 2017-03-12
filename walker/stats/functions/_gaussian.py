@@ -1,19 +1,26 @@
 import numpy as np
 
 def distribution(self, X):
-    for i in range(self.n_peaks+1):
+    if self.covariance is None:
+        N = self.n_peaks+1
+    else:
+        N = self.n_peaks
+    for i in range(N):
         # Define peak amplitude
         A = -self._intensity[i]*self._surface_kT
 
         # Displacement of all X values to mean center
         diff = X-self._mu[i]
 
-        # Build eigenvalue matrix from variances
-        cov = np.eye(self.n_features)*self._sigma[i]
+        if self.covariance is None:
+            # Build eigenvalue matrix from variances
+            cov = np.eye(self.n_features)*self._sigma[i]
 
-        # Solve covariance matrix from principal components rotated by theta to orthonormal frame
-        if self.n_features > 1:
-            cov = _rotate_covariance(cov, self._theta[i], axis=self._axis)
+            # Solve covariance matrix from principal components rotated by theta to orthonormal frame
+            if self.n_features > 1:
+                cov = _rotate_covariance(cov, self._theta[i], axis=self._axis)
+        else:
+            cov = self.covariance[i]
 
         # Invert covariance matrix
         icov = np.linalg.pinv(cov)
@@ -24,19 +31,26 @@ def distribution(self, X):
     return P
 
 def gradient(self, X):
-    for i in range(self.n_peaks+1):
+    if self.covariance is None:
+        N = self.n_peaks+1
+    else:
+        N = self.n_peaks
+    for i in range(N):
         # Define peak amplitude
         A = -self._intensity[i]*self._surface_kT
 
         # Displacement of all X values to mean center
         diff = X-self._mu[i]
 
-        # Build eigenvalue matrix from variances
-        cov = np.eye(self.n_features)*self._sigma[i]
+        if self.covariance is None:
+            # Build eigenvalue matrix from variances
+            cov = np.eye(self.n_features)*self._sigma[i]
 
-        # Solve covariance matrix from principal components rotated by theta to orthonormal frame
-        if self.n_features > 1:
-            cov = _rotate_covariance(cov, self._theta[i], axis=self._axis)
+            # Solve covariance matrix from principal components rotated by theta to orthonormal frame
+            if self.n_features > 1:
+                cov = _rotate_covariance(cov, self._theta[i], axis=self._axis)
+        else:
+            cov = self.covariance[i]
 
         # Invert covariance matrix
         icov = np.linalg.pinv(cov)

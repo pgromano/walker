@@ -28,7 +28,7 @@ def gaussian(self, **kwargs):
 
     References
     ----------
-    [1] 
+    [1]
     '''
 
     # Surface energy scale
@@ -42,16 +42,19 @@ def gaussian(self, **kwargs):
     self.n_peaks = self.mu.shape[0]
     self.n_features = self.mu.shape[1]
 
-    # Setup gaussian widths
-    self.sigma = _check_array_type(kwargs.get('sigma', np.ones((self.n_peaks, self.n_features))*0.1))
-    self._sigma = np.row_stack([self.sigma, self.sigma.sum(0)*4])
+    self.covariance = _check_array_type(kwargs.get('cov', None))
 
-    # Setup gaussian skews
-    if self.n_features > 1:
-        self.theta = _check_array_type(kwargs.get('theta', np.zeros((self.n_peaks, 1))))
-        self._theta = np.row_stack([self.theta, np.zeros(self.theta.shape[1])])
-        self.axis = _check_array_type(kwargs.get('axis', 2*np.ones((self.n_peaks, 1)))).astype(int)
-        self._axis = np.row_stack([self.axis, 2*np.ones(self.axis.shape[1])]).astype(int)
+    if self.covariance is None:
+        # Setup gaussian widths
+        self.sigma = _check_array_type(kwargs.get('sigma', np.ones((self.n_peaks, self.n_features))*0.1))
+        self._sigma = np.row_stack([self.sigma, self.sigma.sum(0)*4])
+
+        # Setup gaussian skews
+        if self.n_features > 1:
+            self.theta = _check_array_type(kwargs.get('theta', np.zeros((self.n_peaks, 1))))
+            self._theta = np.row_stack([self.theta, np.zeros(self.theta.shape[1])])
+            self.axis = _check_array_type(kwargs.get('axis', 2*np.ones((self.n_peaks, 1)))).astype(int)
+            self._axis = np.row_stack([self.axis, 2*np.ones(self.axis.shape[1])]).astype(int)
 
     # Setup gaussian intensitys
     self.intensity = _check_array_type(kwargs.get('intensity', np.ones((self.n_peaks, 1))))
