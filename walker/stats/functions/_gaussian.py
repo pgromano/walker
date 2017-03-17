@@ -3,8 +3,12 @@ import numpy as np
 def distribution(self, X):
     if self.covariance is None:
         N = self.n_peaks+1
+        self.covariance = []
+        compute_cov = True
     else:
         N = self.n_peaks
+        compute_cov = False
+
     for i in range(N):
         # Define peak amplitude
         A = -self._intensity[i]*self._surface_kT
@@ -12,13 +16,14 @@ def distribution(self, X):
         # Displacement of all X values to mean center
         diff = X-self._mu[i]
 
-        if self.covariance is None:
+        if compute_cov is True:
             # Build eigenvalue matrix from variances
             cov = np.eye(self.n_features)*self._sigma[i]
 
             # Solve covariance matrix from principal components rotated by theta to orthonormal frame
             if self.n_features > 1:
                 cov = _rotate_covariance(cov, self._theta[i], axis=self._axis)
+            self.covariance.append(cov)
         else:
             cov = self.covariance[i]
 
@@ -33,8 +38,12 @@ def distribution(self, X):
 def gradient(self, X):
     if self.covariance is None:
         N = self.n_peaks+1
+        self.covariance = []
+        compute_cov = True
     else:
         N = self.n_peaks
+        compute_cov = False
+
     for i in range(N):
         # Define peak amplitude
         A = -self._intensity[i]*self._surface_kT
@@ -42,13 +51,14 @@ def gradient(self, X):
         # Displacement of all X values to mean center
         diff = X-self._mu[i]
 
-        if self.covariance is None:
+        if compute_cov is True:
             # Build eigenvalue matrix from variances
             cov = np.eye(self.n_features)*self._sigma[i]
 
             # Solve covariance matrix from principal components rotated by theta to orthonormal frame
             if self.n_features > 1:
                 cov = _rotate_covariance(cov, self._theta[i], axis=self._axis)
+            self.covariance.append(cov)
         else:
             cov = self.covariance[i]
 

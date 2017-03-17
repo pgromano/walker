@@ -1,2 +1,2 @@
 from .api import Walker
-from . import simulate, stats
+from . import simulators, stats

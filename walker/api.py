@@ -1,10 +1,15 @@
 import numpy as np
-from . import stats
+from . import simulators, stats
+from multiprocessing import Pool
+from functools import partial
 
 class Walker(object):
 	def __init__(self, method="Gaussian", **kwargs):
 		if method == 'Gaussian':
 			stats.set_attributes.gaussian(self, **kwargs)
+
+	def log_liklihood(self, X):
+		return np.log(-(stats.functions._gaussian.distribution(self, X)))+np.log(-(stats.functions._gaussian.distribution(self, X))).min()
 
 	def potential(self, X):
 		return stats.functions._gaussian.distribution(self, X)
@@ -12,21 +17,38 @@ class Walker(object):
 	def gradient(self, X):
 		return stats.functions._gaussian.gradient(self, X)
 
-	def simulate(self, steps, **kwargs):
-		x0 = kwargs.get('x0', self.mu[np.random.choice(self.n_peaks)])
-		kT = kwargs.get('kT', 1.0)
-		gamma = kwargs.get('gamma', 10.0)
-		dt = kwargs.get('dt', 0.001)
+	def simulate(self, steps, n_walkers=1, n_jobs=2, **kwargs):
+		if n_walkers == 1:
+			return self._simulate(steps, **kwargs)
+		else:
+			return self._mpi_simulate(steps, n_walkers=n_walkers, n_jobs=n_jobs, **kwargs)
 
-		# Build simulation array and fill with starting point
-		X = np.zeros((steps+1, self.n_features))
-		X[0] = x0
+	def string(self, a, b, **kwargs):
+		return stats.zero_temp.string(self, a, b, **kwargs)
 
-		# Generate random forces
-		F = np.random.normal(scale=np.sqrt((2.0 * kT * dt)/gamma),
-			size=(steps, self.n_features))
+	def _simulate(self, steps, **kwargs):
+		return simulators.diffusion.run(self, steps, **kwargs)
 
-		# Simulate!
-		for i in range(steps):
-			X[i+1] = X[i] - (dt/gamma)*self.gradient(X[i]) + F[i]
-		return X
+	def _mpi_simulate(self, steps, n_walkers=2, n_jobs=1, **kwargs):
+		n_walker_iter = np.empty(n_walkers)
+		n_walker_iter.fill(steps)
+		p = Pool(n_jobs)
+		return p.map(partial(self.simulate, **kwargs), n_walker_iter.astype(int))
+
+	def accelerated_simulate(self, steps, n_walkers=1, n_jobs=2, **kwargs):
+		if n_walkers == 1:
+			return self._acc_simulate(steps, **kwargs)
+		else:
+			return self._mpi_acc_simulate(steps, n_walkers=n_walkers, n_jobs=n_jobs, **kwargs)
+
+	def _acc_simulate(self, steps, **kwargs):
+		return simulators.temp_acc.run(self, steps, **kwargs)
+
+	def _mpi_acc_simulate(self, steps, n_walkers=2, n_jobs=1, **kwargs):
+		n_walker_iter = np.empty(n_walkers)
+		n_walker_iter.fill(steps)
+		p = Pool(n_jobs)
+		return p.map(partial(self.simulate, **kwargs), n_walker_iter.astype(int))
+
+	def metasimulate(self, steps, h=0.1, w=0.1, **kwargs):
+		pass
