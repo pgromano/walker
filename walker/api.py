@@ -24,7 +24,7 @@ class Walker(object):
 			return self._mpi_simulate(steps, n_walkers=n_walkers, n_jobs=n_jobs, **kwargs)
 
 	def string(self, a, b, **kwargs):
-		return stats.zero_temp.string(self, a, b, **kwargs)
+		return simulators.zero_temp_string.run(self, a, b, **kwargs)
 
 	def _simulate(self, steps, **kwargs):
 		return simulators.diffusion.run(self, steps, **kwargs)
