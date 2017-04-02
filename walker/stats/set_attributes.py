@@ -43,8 +43,8 @@ def gaussian(self, **kwargs):
     self.n_features = self.mu.shape[1]
 
     self.covariance = _check_array_type(kwargs.get('cov', None))
-
     if self.covariance is None:
+        self.covariance = []
         # Setup gaussian widths
         self.sigma = _check_array_type(kwargs.get('sigma', np.ones((self.n_peaks, self.n_features))*0.1))
         self._sigma = np.row_stack([self.sigma, self.sigma.sum(0)*4])
@@ -56,6 +56,15 @@ def gaussian(self, **kwargs):
             self.axis = _check_array_type(kwargs.get('axis', 2*np.ones((self.n_peaks, 1)))).astype(int)
             self._axis = np.row_stack([self.axis, 2*np.ones(self.axis.shape[1])]).astype(int)
 
+        for i in range(self.n_peaks):
+            # Build eigenvalue matrix from variances
+            cov = np.eye(self.n_features)*self._sigma[i]
+
+            # Solve covariance matrix from principal components rotated by theta to orthonormal frame
+            if self.n_features > 1:
+                cov = _rotate_covariance(cov, self._theta[i], axis=self._axis)
+            self.covariance.append(cov)
+
     # Setup gaussian intensitys
     self.intensity = _check_array_type(kwargs.get('intensity', np.ones((self.n_peaks, 1))))
     self._intensity = np.row_stack([self.intensity, self.intensity.max()*0.25])
@@ -64,3 +73,30 @@ def _check_array_type(attr):
     if type(attr) == list:
         attr = np.array(attr)
     return attr
+
+def _rotate_covariance(cov, theta, axis=None):
+    def _R(theta, n, axis):
+        R = np.eye(n)
+        R[:2,:2] = np.array([[np.cos(theta), -np.sin(theta)],
+                             [np.cos(theta), np.sin(theta)]])
+        return np.roll(R, axis, axis=[0,1])
+
+    # Number of dimensions
+    ndim = cov.shape[0]
+
+    if type(theta) == float:
+        theta = [theta]
+
+    if ndim == 2:
+        axis = [2 for i in range(len(theta))]
+    elif ndim > 2 and axis is None:
+        axis = [0 for i in range(len(theta))]
+
+    for i,t in enumerate(theta):
+        # Get rotation operator for n dimensions
+        if theta[i] == 0:
+            pass
+        else:
+            R = _R(theta[i], ndim, axis=axis[i])
+            cov = R.dot(cov.dot(np.linalg.pinv(R)))
+    return cov

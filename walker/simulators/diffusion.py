@@ -1,5 +1,5 @@
 import numpy as np
-#from .src import _evolve
+from .src import _diffusion
 
 def run(self, steps, **kwargs):
     x0 = kwargs.get('x0', self.mu[np.random.choice(self.n_peaks)])
@@ -8,14 +8,12 @@ def run(self, steps, **kwargs):
     dt = kwargs.get('dt', 0.001)
 
     # Build simulation array and fill with starting point
-    X = np.zeros((steps+1, self.n_features))
+    X = np.zeros((steps, self.n_features)).astype(float, order='F')
     X[0] = x0
 
-    # Generate random forces
-    F = np.random.normal(scale=np.sqrt((2.0 * kT * dt)/gamma),
-        size=(steps, self.n_features))
+    mu = np.copy(self.mu).astype(float, order='F')
+    icov = np.array([np.linalg.pinv(self.covariance[i]) for i in range(self.n_peaks)]).astype(float, order='F')
+    A = np.array([-self._intensity[i]*self._surface_kT for i in range(self.n_peaks)]).astype(float, order='F')
 
-    # Simulate!
-    for i in range(steps):
-        X[i+1] = X[i] - (dt/gamma)*self.gradient(X[i]) + F[i]
+    _diffusion.run(X, mu, icov, A, dt, gamma, kT, self.n_features, steps, self.n_peaks)
     return X
