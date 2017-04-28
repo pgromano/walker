@@ -14,6 +14,12 @@ extensions.append(
               sources = [join(src, "_temp_acc.f95")])
 )
 
+src = 'walker/stats/functions/src'
+extensions.append(
+    Extension(name = 'walker.stats.functions.src._gaussian',
+              sources = [join(src, "_gaussian.f95")])
+)
+
 setup(name = 'walker',
     version = '0.1',
     description = 'Python API for random walk on Gaussian potential',
