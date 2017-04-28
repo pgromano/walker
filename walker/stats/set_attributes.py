@@ -6,10 +6,10 @@ def gaussian(self, **kwargs):
     -----------
 
     mu: (N,K) ndarray
-        Gaussian centers, positions for N minima for K dimensions.
+        Gaussian centers for N minima in K dimensions.
 
     sigma: (N,K) ndarray
-        Gaussian width
+        Gaussian width for N minima in K dimensions.
 
     theta: (N,l) ndarray
         Array of l rotation angles for all N Gaussian peaks. This value is only value for
@@ -45,6 +45,8 @@ def gaussian(self, **kwargs):
     self.covariance = _check_array_type(kwargs.get('cov', None))
     if self.covariance is None:
         self.covariance = []
+        self._covariance = []
+
         # Setup gaussian widths
         self.sigma = _check_array_type(kwargs.get('sigma', np.ones((self.n_peaks, self.n_features))*0.1))
         self._sigma = np.row_stack([self.sigma, self.sigma.sum(0)*4])
@@ -56,14 +58,18 @@ def gaussian(self, **kwargs):
             self.axis = _check_array_type(kwargs.get('axis', 2*np.ones((self.n_peaks, 1)))).astype(int)
             self._axis = np.row_stack([self.axis, 2*np.ones(self.axis.shape[1])]).astype(int)
 
-        for i in range(self.n_peaks):
+        for i in range(self.n_peaks+1):
             # Build eigenvalue matrix from variances
             cov = np.eye(self.n_features)*self._sigma[i]
 
             # Solve covariance matrix from principal components rotated by theta to orthonormal frame
             if self.n_features > 1:
                 cov = _rotate_covariance(cov, self._theta[i], axis=self._axis)
-            self.covariance.append(cov)
+            if not i == self.n_peaks+1:
+                self.covariance.append(cov)
+                self._covariance.append(cov)
+            else:
+                self._covariance.append(cov)
 
     # Setup gaussian intensitys
     self.intensity = _check_array_type(kwargs.get('intensity', np.ones((self.n_peaks, 1))))
